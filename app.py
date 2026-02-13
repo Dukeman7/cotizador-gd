@@ -76,5 +76,5 @@ if btn_calcular:
 
 # --- BARRA LATERAL ---
 st.sidebar.markdown("---")
-st.sidebar.write("🛠️ **Desarrollo Técnico: Mago Luis**")
+st.sidebar.write("🛠️ **Desarrollo Técnico: Luis Duque**")
 st.sidebar.write("Versión del Algoritmo: 3.0 (Balanced Mode)")
