@@ -150,7 +150,12 @@ try:
 
     # Para evitar que Streamlit sobrescriba el tema, usamos theme=None
     st.plotly_chart(fig, use_container_width=True, theme=None)
-
+# Botón para descargar como HTML (Mantiene la interactividad)
+    st.download_button(
+        label="💾 Descargar Gráfica Interactiva",
+        data=fig.to_html(),
+        file_name="matriz_tarificacion.html",
+        mime="text/html",
 except Exception as e:
     st.info("Pega tus datos arriba para ver la magia. Formato: Mbps [Tab] Precio [Tab] Cantidad")
 
