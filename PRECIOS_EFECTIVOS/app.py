@@ -6,9 +6,9 @@ from io import StringIO
 import re
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="IUFO Interactive Engine", layout="wide")
+st.set_page_config(page_title="IUFO Precision Engine", layout="wide")
 
-# --- BARRA LATERAL ---
+# --- BARRA LATERAL (EL CENTRO DE MANDO) ---
 st.sidebar.header("🛠️ Parámetros del Algoritmo")
 titulo_input = st.sidebar.text_input("Título de la Gráfica", "MATRIZ INTERACTIVA DE TARIFICACIÓN")
 
@@ -27,15 +27,19 @@ k_sup = st.sidebar.number_input("k_sup", value=1.05)
 C_inf = st.sidebar.number_input("C_inf", value=1.00)
 k_inf = st.sidebar.number_input("k_inf", value=0.35)
 
-st.sidebar.subheader("📊 Límites de Ejes")
+st.sidebar.subheader("📊 Ajustes de Gráfica")
 x_max = st.sidebar.number_input("Máximo X (Mbps)", value=40000)
 y_max = st.sidebar.number_input("Máximo Y ($/Mbps)", value=60)
+
+# NUEVO: Control de radio de los círculos
+factor_circulo = st.sidebar.slider("Tamaño de los Círculos", 1, 100, 30, help="Desliza para achicar los balones de playa")
 
 # --- CUERPO PRINCIPAL ---
 st.title(titulo_input)
 
 st.subheader("📝 Datos del Portafolio")
-raw_data = st.text_area("Pega celdas de Excel (Mbps  Precio  Clientes)", 
+st.caption("Tip: Pega tus celdas de Excel aquí. El sistema limpia tabuladores y espacios solo.")
+raw_data = st.text_area("Formato: Mbps  Precio  Clientes", 
                         value="100  15.0  1\n1000  3.5  12\n10000  1.3  4", height=150)
 
 def calc_curvas(bw):
@@ -46,15 +50,15 @@ def calc_curvas(bw):
     return p_prom, p_techo, p_suelo
 
 try:
-    # Procesar datos
+    # Procesamiento inteligente de datos
     clean_data = re.sub(r'[ \t]+', ',', raw_data.strip())
     df = pd.read_csv(StringIO(clean_data), names=['bw', 'price', 'n_clients'])
     
-    # Generar Curvas para el fondo
+    # Generar Curvas
     bw_range = np.logspace(0, np.log10(x_max), 500)
     p_p, p_t, p_s = calc_curvas(bw_range)
 
-    # --- CREAR GRÁFICA INTERACTIVA CON PLOTLY ---
+    # --- CREAR GRÁFICA INTERACTIVA ---
     fig = go.Figure()
 
     # 1. Banda de Negociación (Sombreado)
@@ -62,53 +66,67 @@ try:
         x=np.concatenate([bw_range, bw_range[::-1]]),
         y=np.concatenate([p_t, p_s[::-1]]),
         fill='toself',
-        fillcolor='rgba(0, 68, 136, 0.1)',
+        fillcolor='rgba(0, 68, 136, 0.08)',
         line=dict(color='rgba(255,255,255,0)'),
         hoverinfo='skip',
-        showlegend=True,
         name='Banda de Negociación'
     ))
 
     # 2. Curvas de Referencia
-    fig.add_trace(go.Scatter(x=bw_range, y=p_p, name='Precio Sugerido', line=dict(color='#004488', width=2)))
+    fig.add_trace(go.Scatter(x=bw_range, y=p_p, name='Precio Sugerido', line=dict(color='#004488', width=2.5)))
     fig.add_trace(go.Scatter(x=bw_range, y=p_t, name='Límite Techo', line=dict(color='#CC0000', width=1, dash='dash')))
     fig.add_trace(go.Scatter(x=bw_range, y=p_s, name='Límite Suelo', line=dict(color='#008800', width=1, dash='dash')))
 
-    # 3. Puntos de Clientes (CON HOVER)
+    # 3. Puntos de Clientes (CON HOVER Y ESCALA AJUSTABLE)
     fig.add_trace(go.Scatter(
         x=df['bw'],
         y=df['price'],
         mode='markers',
         name='Clientes en el plan',
         marker=dict(
-            size=df['n_clients'] * 15, # Proporcional
+            # Aquí aplicamos el factor de escala que pediste
+            size=df['n_clients'],
             sizemode='area',
-            sizeref=2.*max(df['n_clients'])/(40.**2),
+            sizeref=2. * max(df['n_clients']) / (factor_circulo**2),
             color='#004488',
             line=dict(width=1, color='white')
         ),
-        text=[f"Clientes: {int(c)}<br>Capacidad: {b} Mbps<br>Precio: ${p}/Mbps" 
+        text=[f"<b>Plan: {b} Mbps</b><br>Clientes: {int(c)}<br>Precio: ${p}/Mbps" 
               for c, b, p in zip(df['n_clients'], df['bw'], df['price'])],
         hoverinfo='text'
     ))
 
-    # Configuración de Ejes (Origen 0,0 y Lineal en Y)
-    fig.update_xaxes(type="log", title="Capacidad contratada (Mbps)", range=[0, np.log10(x_max)], 
-                     gridcolor='rgba(0,0,0,0.1)', zeroline=True, zerolinecolor='black')
-    fig.update_yaxes(title="Precio Unitario (USD / Mbps)", range=[0, y_max], 
-                     gridcolor='rgba(0,0,0,0.1)', zeroline=True, zerolinecolor='black')
+    # --- CONFIGURACIÓN ESTRICTA DE EJES (Origen 0,0) ---
+    fig.update_xaxes(
+        type="log", 
+        title="Capacidad contratada (Mbps)", 
+        range=[0, np.log10(x_max)], # De 10^0=1 hasta x_max
+        gridcolor='rgba(0,0,0,0.05)',
+        zeroline=True,
+        zerolinecolor='black',
+        linewidth=2
+    )
+    fig.update_yaxes(
+        title="Precio Unitario (USD / Mbps)", 
+        range=[0, y_max], # Origen estricto en 0
+        gridcolor='rgba(0,0,0,0.05)',
+        zeroline=True,
+        zerolinecolor='black',
+        linewidth=2
+    )
 
     fig.update_layout(
-        height=700,
-        margin=dict(l=40, r=40, b=40, t=40),
+        template='plotly_white',
+        height=750,
+        margin=dict(l=50, r=50, b=50, t=50),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        plot_bgcolor='white'
+        hoverlabel=dict(bgcolor="white", font_size=12, font_family="Arial")
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
 except Exception as e:
-    st.info("Copia y pega tus datos de Excel para activar la visión térmica del rifle.")
+    st.info("Pega tus datos arriba para ver la magia. Formato: Mbps [Tab] Precio [Tab] Cantidad")
 
 st.sidebar.markdown("---")
-st.sidebar.caption("Modo Gumersinda v4.0 Interactivo")
+st.sidebar.caption("Desarrollo: Ing. Luis Duque | Modo Gumersinda v4.1")
