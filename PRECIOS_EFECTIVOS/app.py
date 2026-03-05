@@ -31,7 +31,7 @@ st.sidebar.subheader("📊 Ajustes de Gráfica")
 x_max = st.sidebar.number_input("Máximo X (Mbps)", value=40000)
 y_max = st.sidebar.number_input("Máximo Y ($/Mbps)", value=60)
 
-# Control de radio de los círculos
+# NUEVO: Control de radio de los círculos
 factor_circulo = st.sidebar.slider("Tamaño de los Círculos", 1, 100, 30, help="Desliza para achicar los balones de playa")
 
 # --- CUERPO PRINCIPAL ---
@@ -77,13 +77,14 @@ try:
     fig.add_trace(go.Scatter(x=bw_range, y=p_t, name='Límite Techo', line=dict(color='#CC0000', width=1, dash='dash')))
     fig.add_trace(go.Scatter(x=bw_range, y=p_s, name='Límite Suelo', line=dict(color='#008800', width=1, dash='dash')))
 
-    # 3. Puntos de Clientes
+    # 3. Puntos de Clientes (CON HOVER Y ESCALA AJUSTABLE)
     fig.add_trace(go.Scatter(
         x=df['bw'],
         y=df['price'],
         mode='markers',
         name='Clientes en el plan',
         marker=dict(
+            # Aquí aplicamos el factor de escala que pediste
             size=df['n_clients'],
             sizemode='area',
             sizeref=2. * max(df['n_clients']) / (factor_circulo**2),
@@ -95,67 +96,37 @@ try:
         hoverinfo='text'
     ))
 
-    # --- CONFIGURACIÓN DE EJES Y FONDO CLARO ---
+    # --- CONFIGURACIÓN ESTRICTA DE EJES (Origen 0,0) ---
     fig.update_xaxes(
         type="log", 
         title="Capacidad contratada (Mbps)", 
-        range=[0, np.log10(x_max)],
-        gridcolor='rgba(0,0,0,0.1)',
+        range=[0, np.log10(x_max)], # De 10^0=1 hasta x_max
+        gridcolor='rgba(0,0,0,0.05)',
         zeroline=True,
         zerolinecolor='black',
-        linewidth=2,
-        tickfont=dict(color='black'),
-        titlefont=dict(color='black')
+        linewidth=2
     )
     fig.update_yaxes(
         title="Precio Unitario (USD / Mbps)", 
-        range=[0, y_max],
-        gridcolor='rgba(0,0,0,0.1)',
+        range=[0, y_max], # Origen estricto en 0
+        gridcolor='rgba(0,0,0,0.05)',
         zeroline=True,
         zerolinecolor='black',
-        linewidth=2,
-        tickfont=dict(color='black'),
-        titlefont=dict(color='black')
+        linewidth=2
     )
 
     fig.update_layout(
         template='plotly_white',
-        paper_bgcolor='white',
-        plot_bgcolor='white',
         height=750,
         margin=dict(l=50, r=50, b=50, t=50),
-        legend=dict(
-            orientation="h", 
-            yanchor="bottom", 
-            y=1.02, 
-            xanchor="right", 
-            x=1,
-            font=dict(color="black")
-        ),
-        # Arreglo de Tooltips para que se vean en modo oscuro
-        hoverlabel=dict(
-            bgcolor="white", 
-            font_size=13, 
-            font_family="Arial",
-            font_color="black",
-            bordercolor="#004488"
-        ),
-        hovermode="closest"
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        hoverlabel=dict(bgcolor="white", font_size=12, font_family="Arial")
     )
 
-    # Mostrar gráfica forzando tema propio
-    st.plotly_chart(fig, use_container_width=True, theme=None)
-    
-    # Botón para descargar como HTML (Mantiene la interactividad)
-    st.download_button(
-        label="💾 Descargar Gráfica Interactiva",
-        data=fig.to_html(),
-        file_name="matriz_tarificacion.html",
-        mime="text/html",
-    )
+    st.plotly_chart(fig, use_container_width=True)
 
 except Exception as e:
     st.info("Pega tus datos arriba para ver la magia. Formato: Mbps [Tab] Precio [Tab] Cantidad")
 
 st.sidebar.markdown("---")
-st.sidebar.caption("Desarrollo: Ing. Luis Duque | Modo Gumersinda v4.2")
+st.sidebar.caption("Desarrollo: Ing. Luis Duque | Modo Gumersinda v4.1")
