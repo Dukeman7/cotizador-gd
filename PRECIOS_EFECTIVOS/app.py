@@ -156,6 +156,7 @@ try:
         data=fig.to_html(),
         file_name="matriz_tarificacion.html",
         mime="text/html",
+    )
 except Exception as e:
     st.info("Pega tus datos arriba para ver la magia. Formato: Mbps [Tab] Precio [Tab] Cantidad")
 
