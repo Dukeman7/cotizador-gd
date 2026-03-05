@@ -122,8 +122,34 @@ try:
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         hoverlabel=dict(bgcolor="white", font_size=12, font_family="Arial")
     )
+# --- CONFIGURACIÓN DE LAYOUT (Fondo blanco y Tooltips visibles) ---
+    fig.update_layout(
+        template='plotly_white', # Fuerza el tema claro de Plotly
+        paper_bgcolor='white',   # Fondo del papel (fuera del eje) en blanco
+        plot_bgcolor='white',    # Fondo del área de trazado en blanco
+        height=750,
+        margin=dict(l=50, r=50, b=50, t=50),
+        legend=dict(
+            orientation="h", 
+            yanchor="bottom", 
+            y=1.02, 
+            xanchor="right", 
+            x=1,
+            font=dict(color="black") # Asegura leyendas negras
+        ),
+        # Esto es lo que arregla tus tooltips:
+        hoverlabel=dict(
+            bgcolor="white", 
+            font_size=13, 
+            font_family="Arial",
+            font_color="black",      # Forzamos texto negro en el tooltip
+            bordercolor="#004488"    # Un borde elegante azul para que resalte
+        ),
+        hovermode="closest"
+    )
 
-    st.plotly_chart(fig, use_container_width=True)
+    # Para evitar que Streamlit sobrescriba el tema, usamos theme=None
+    st.plotly_chart(fig, use_container_width=True, theme=None)
 
 except Exception as e:
     st.info("Pega tus datos arriba para ver la magia. Formato: Mbps [Tab] Precio [Tab] Cantidad")
