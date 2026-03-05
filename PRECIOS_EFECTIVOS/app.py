@@ -85,4 +85,34 @@ try:
     ax.set_ylim(0, y_max_input) # Y parte de 0 estrictamente
     
     # Ajuste visual de ejes para que se vean en el origen
-    ax.spines['left'].set_position(('data', 1
+    ax.spines['left'].set_position(('data', 1))
+    ax.spines['bottom'].set_position(('data', 0))
+
+    ax.set_xlabel("Capacidad contratada (Mbps)", fontsize=10, fontweight='bold')
+    ax.set_ylabel("Precio Unitario (USD / Mbps)", fontsize=10, fontweight='bold')
+    
+    ax.grid(True, which="both", ls="-", alpha=0.2)
+    ax.legend(loc='upper right', frameon=True, fontsize=9)
+
+    st.pyplot(fig)
+
+    # Auditoría Rápida de Cisnes Negros
+    st.divider()
+    st.subheader("🕵️ Auditoría de Desviaciones")
+    
+    df['Sugerido'], df['Techo'], df['Suelo'] = iufo_calc(df['bw'])
+    def detect_swan(row):
+        if row['price'] > row['Techo']: return "🔴 SOBREPRECIO"
+        if row['price'] < row['Suelo']: return "🟢 SUBPRECIO"
+        return "✅ EN BANDA"
+    
+    df['Estatus'] = df.apply(detect_swan, axis=1)
+    st.dataframe(df[['bw', 'price', 'n_clients', 'Estatus']].style.applymap(
+        lambda x: 'color: red' if 'SOBRE' in str(x) else ('color: green' if 'SUB' in str(x) else ''), subset=['Estatus']
+    ))
+
+except Exception as e:
+    st.error(f"Error al procesar los datos: Asegúrate de usar el formato Mbps, Precio, Cantidad. Detalles: {e}")
+
+st.sidebar.markdown("---")
+st.sidebar.caption("Desarrollo: Ing. Luis Duque | Versión 3.5 Final")
